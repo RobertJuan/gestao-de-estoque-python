@@ -1,0 +1,22 @@
+{
+    "nomes": [
+        "bolacha",
+        "xilito",
+        "pirulito"
+    ],
+    "precos": [
+        5.0,
+        1.0,
+        0.5
+    ],
+    "quantidades": [
+        17,
+        30,
+        75
+    ],
+    "estoque_minimo": [
+        5,
+        10,
+        10
+    ]
+}
