@@ -19,6 +19,9 @@ try:
 except FileNotFoundError:
     print('Arquivo de estoque ainda não existe.' )
 
+except json.JSONDecodeError:
+    print('Erro: o arquivo de estoque está vazio ou contém dados inválidos.')
+
 def salvar_dados():
     dados = {
         'nomes': nomes,
@@ -28,7 +31,159 @@ def salvar_dados():
     }
 
     with open('estoque.json', 'w') as arquivo:
-        json.dump(dados, arquivo, indent=4)    
+        json.dump(dados, arquivo, indent=4)   
+
+def cadastrar_produtos():
+    while True:         
+        print('Cadastre um poduto')
+        nome = input('Nome do produto: ').strip()
+    
+        if nome == '':
+            print('O nome do produto não pode ficar vazio!')
+    
+        elif nome in nomes:
+            print('Esse produto já existe!')
+    
+        else:
+            break
+    
+    while True:
+        try:
+            preco = float(input('Digite o valor: ').replace(',', '.'))
+            if preco <= 0:
+                print('O preço deve ser maior que zero!')
+                continue
+    
+            else:
+                break
+        except ValueError:
+            print('Erro: digite valores numéricos válidos!')
+            continue
+    
+    while True:
+        try:      
+            qntd = int(input('Digite a quantidade: '))
+            if qntd < 0 :
+                print('A quantidade não pode ser negativa!')
+                continue
+            else:
+                break
+    
+        except ValueError:
+            print('Erro: digite um número inteiro válido!')
+    
+    while True:
+        try:
+            estoqMin = int(input('Qual a quantidade mínima que deve permanecer no estoque? '))
+            if estoqMin < 0:
+                print('O estoque mínimo não pode ser negativo!')
+            else:
+                break
+    
+        except ValueError:
+            print('Erro: digite um número inteiro válido!')
+    
+    nomes.append(nome)
+    precos.append(preco)
+    quantidades.append(qntd)
+    estoque_minimo.append(estoqMin)
+    
+    salvar_dados()
+    
+    print('Cadastro realizado.')
+
+def consultar_produtos():
+    if len(nomes) == 0:
+        print('Nenhum produto cadastrado')
+    else:
+        print('produto|Preço|Estoque')
+        for i in range(len(nomes)):
+            print(f'{nomes[i]} - {precos[i]:.2f} - {quantidades[i]}')
+
+def registrar_entrada():
+    atualizar = input('Qual o produto que deseja atualizar? ')
+    encontrou = False
+
+    for i in range(len(nomes)):
+        if nomes[i] == atualizar:
+            encontrou = True
+            print('produto encontrado!')
+            while True:
+                try:
+                    entrada = int(input('Quantas unidades chegaram? '))
+
+                    if entrada > 0:
+                        break
+                    else:
+                        print('A entrada deve ser maior que zero!')
+                        
+                except ValueError:
+                    print('Erro: digite valores numéricos válidos!')
+                    continue
+
+            quantidades[i] += entrada
+
+            print(f'Novo estoque: {quantidades[i]}')
+
+            salvar_dados()
+
+    if not encontrou:
+        print('Produto não encontrado')
+
+def registrar_saida():
+    retirar = input('Qual produto deseja retirar? ')
+    encontrou = False
+
+    for i in range(len(nomes)):
+        if nomes[i] == retirar:
+            encontrou = True
+            print('Produto encontrado!')
+
+            while True:
+                try:
+                    saida = int(input('Quantas unidades deseja retirar? '))
+
+                    if saida <= 0:
+                        print('A saída deve ser maior que zero!')
+
+                    elif saida > quantidades[i]:
+                        print('Quantidade solicitada superior ao estoque disponível!')
+
+                    else:
+                        break
+
+                except ValueError:
+                    print('Erro: digite valores numéricos válidos!')
+
+            quantidades[i] -= saida
+            print('Saída registrada.')
+            print(f'Novo estoque: {quantidades[i]}')
+
+            salvar_dados()
+
+    if not encontrou:
+        print('Produto não encontrado')
+
+def verificar_estoque_baixo():
+    encontrouAbaixo = False
+
+    if len(nomes) == 0:
+        print('Nenhum produto cadastrado.')
+
+    else:
+        for i in range(len(nomes)):
+            if quantidades[i] <= estoque_minimo[i]:
+                if not encontrouAbaixo:
+                    print('Produtos com estoque baixo')
+                    encontrouAbaixo = True
+
+                print(f'O produto {nomes[i]} está com estoque baixo | Estoque atual: {quantidades[i]} UN - Estoque mínimo: {estoque_minimo[i]} UN')
+
+        if not encontrouAbaixo:
+            print('Nenhum produto está com o estoque baixo.')
+
+def sair_programa():
+    print('Programa encerrado')
 
 while True:
     print('=== SISTEMA DE ESTOQUE ===')
@@ -46,161 +201,23 @@ while True:
         print('\nDigite apenas números!')
         continue
 
-#1 - Cadastrar produto
-
     if opcao == 1:
-        while True:         
-            print('Cadastre um poduto')
-            nome = input('Nome do produto: ').strip()
-
-            if nome == '':
-                print('O nome do produto não pode ficar vazio!')
-
-            elif nome in nomes:
-                print('Esse produto já existe!')
-
-            else:
-                break
-
-        while True:
-            try:
-                preco = float(input('Digite o valor: ').replace(',', '.'))
-                if preco <= 0:
-                    print('O preço deve ser maior que zero!')
-                    continue
-
-                else:
-                    break
-            except ValueError:
-                print('Erro: digite valores numéricos válidos!')
-                continue
-
-        while True:
-            try:      
-                qntd = int(input('Digite a quantidade: '))
-                if qntd < 0 :
-                    print('A quantidade não pode ser negativa!')
-                    continue
-                else:
-                    break
-
-            except ValueError:
-                print('Erro: digite um número inteiro válido!')
-
-        while True:
-            try:
-                estoqMin = int(input('Qual a quantidade mínima que deve permanecer no estoque? '))
-                if estoqMin < 0:
-                    print('O estoque mínimo não pode ser negativo!')
-                else:
-                    break
-
-            except ValueError:
-                print('Erro: digite um número inteiro válido!')
-
-        nomes.append(nome)
-        precos.append(preco)
-        quantidades.append(qntd)
-        estoque_minimo.append(estoqMin)
-
-        salvar_dados()
-
-        print('Cadastro realizado.')
-
-#2 - Consultar produtos
+        cadastrar_produtos()
 
     elif opcao == 2: 
-        if len(nomes) == 0:
-            print('Nenhum produto cadastrado')
-        else:
-            print('produto|Preço|Estoque')
-            for i in range(len(nomes)):
-                print(f'{nomes[i]} - {precos[i]:.2f} - {quantidades[i]}')
-
-#3 - Registrar entrada
+        consultar_produtos()
 
     elif opcao == 3: 
-        atualizar = input('Qual o produto que deseja atualizar? ')
-        encontrou = False
-
-        for i in range(len(nomes)):
-            if nomes[i] == atualizar:
-                encontrou = True
-                print('produto encontrado!')
-                while True:
-                    try:
-                        entrada = int(input('Quantas unidades chegaram? '))
-
-                        if entrada > 0:
-                            break
-                        else:
-                            print('A entrada deve ser maior que zero!')
-                        
-                    except ValueError:
-                        print('Erro: digite valores numéricos válidos!')
-                        continue
-
-                quantidades[i] += entrada
-
-                print(f'Novo estoque: {quantidades[i]}')
-
-                salvar_dados()
-
-        if not encontrou:
-            print('Produto não encontrado')
+        registrar_entrada()
         
     elif opcao == 4:
-        retirar = input('Qual produto deseja retirar? ')
-        encontrou = False
-
-        for i in range(len(nomes)):
-            if nomes[i] == retirar:
-                encontrou = True
-                print('Produto encontrado!')
-
-                while True:
-                    try:
-                        saida = int(input('Quantas unidades deseja retirar? '))
-
-                        if saida <= 0:
-                            print('A saída deve ser maior que zero!')
-
-                        elif saida > quantidades[i]:
-                            print('Quantidade solicitada superior ao estoque disponível!')
-
-                        else:
-                            break
-
-                    except ValueError:
-                        print('Erro: digite valores numéricos válidos!')
-
-                quantidades[i] -= saida
-                print('Saída registrada.')
-                print(f'Novo estoque: {quantidades[i]}')
-
-                salvar_dados()
-
-        if not encontrou:
-            print('Produto não encontrado')
+        registrar_saida()
 
     elif opcao == 5: 
-        encontrouAbaixo = False
-
-        if len(nomes) == 0:
-            print('Nenhum produto cadastrado.')
-
-        else:
-            for i in range(len(nomes)):
-                if quantidades [i] <= estoque_minimo[i]:
-                    encontrouAbaixo = True
-                    print(f'Produtos com estoque baixo')
-                    print(f'o produto {nomes[i]} esta com o estoque baixo | estoque atual: {quantidades[i]} UN - estoque minimo: {estoque_minimo[i]} UN')
-
-            if not encontrouAbaixo:
-                print('Nenhum produto está com o estoque baixo.')
+        verificar_estoque_baixo()
 
     elif opcao == 6:
-        print('Programa encerrado')
+        sair = sair_programa()
         break
     else:
-        print('Opção invalida, tente novamente')    
+        print('Opção inválida, tente novamente')   
