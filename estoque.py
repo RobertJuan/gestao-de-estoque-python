@@ -1,4 +1,5 @@
 import json
+import math
 
 nomes = []
 precos = []
@@ -16,11 +17,35 @@ try:
         quantidades = dados['quantidades']
         estoque_minimo = dados['estoque_minimo']
 
+    if not all(isinstance(lista, list) for lista in (nomes, precos, quantidades, estoque_minimo)):
+        raise ValueError('Os dados do estoque devem estar organizados em listas.')
+
+    if not (len(nomes) == len(precos) == len(quantidades) == len(estoque_minimo)):
+        raise ValueError('As listas do estoque possuem tamanhos diferentes.')
+
+    if not all(isinstance(nome, str) for nome in nomes):
+        raise ValueError('Existem nomes de produtos inválidos.')
+
+    if not all(isinstance(preco, (int, float)) and math.isfinite(preco) and preco > 0 for preco in precos):
+        raise ValueError('Existem preços inválidos.')
+
+    if not all(isinstance(qntd, int) and qntd >= 0 for qntd in quantidades):
+        raise ValueError('Existem quantidades inválidas.')
+
+    if not all(isinstance(minimo, int) and minimo >= 0 for minimo in estoque_minimo):
+        raise ValueError('Existem valores de estoque mínimo inválidos.')
+
 except FileNotFoundError:
     print('Arquivo de estoque ainda não existe.' )
 
 except json.JSONDecodeError:
     print('Erro: o arquivo de estoque está vazio ou contém dados inválidos.')
+
+except KeyError as erro:
+    print(f'Erro: está faltando uma informação no arquivo JSON: {erro}')
+
+except ValueError as erro:
+    print(f'Erro nos dados do estoque: {erro}')   
 
 def salvar_dados():
     dados = {
@@ -35,13 +60,13 @@ def salvar_dados():
 
 def cadastrar_produtos():
     while True:         
-        print('Cadastre um poduto')
+        print('\n========== CADASTRO DE PRODUTO ==========')
         nome = input('Nome do produto: ').strip()
     
         if nome == '':
             print('O nome do produto não pode ficar vazio!')
     
-        elif nome in nomes:
+        elif nome.lower() in [n.strip().lower() for n in nomes]:
             print('Esse produto já existe!')
     
         else:
@@ -50,8 +75,8 @@ def cadastrar_produtos():
     while True:
         try:
             preco = float(input('Digite o valor: ').replace(',', '.'))
-            if preco <= 0:
-                print('O preço deve ser maior que zero!')
+            if not math.isfinite(preco) or preco <= 0:
+                print('Erro: o preço deve ser um valor maior que R$ 0,00.')
                 continue
     
             else:
@@ -90,24 +115,52 @@ def cadastrar_produtos():
     
     salvar_dados()
     
-    print('Cadastro realizado.')
+    print(f'Produto "{nome}" cadastrado com sucesso!')
 
 def consultar_produtos():
     if len(nomes) == 0:
-        print('Nenhum produto cadastrado')
+        print('Nenhum produto cadastrado.')
     else:
-        print('produto|Preço|Estoque')
+        print('\n========== PRODUTOS CADASTRADOS ==========')
+        print(f'{"PRODUTO":<20} {"PREÇO":<12} {"ESTOQUE":<10} {"MÍNIMO":<10} SITUAÇÃO')
+
+        produtos_baixos = 0
+
         for i in range(len(nomes)):
-            print(f'{nomes[i]} - {precos[i]:.2f} - {quantidades[i]}')
+            if quantidades[i] <= estoque_minimo[i]:
+                situacao = 'REPOR'
+                produtos_baixos += 1
+            else:
+                situacao = 'NORMAL'
+            print(f'{nomes[i]:<20} R$ {precos[i]:<9.2f} {quantidades[i]:<10} {estoque_minimo[i]:<10} {situacao}')
+
+        print(f'Total de produtos cadastrados: {len(nomes)}')
+
+
+        total_unidades = sum(quantidades)
+        print(f'Total de unidades em estoque: {total_unidades}')
+
+        valor_total = 0
+
+        for i in range(len(nomes)):
+            valor_total += precos[i] * quantidades[i]
+
+        print(f'Valor total do estoque: R$ {valor_total:.2f}')
+
+        print(f'Produtos precisando de reposição: {produtos_baixos}')
+
+        percentual = (produtos_baixos / len(nomes)) * 100
+        print(f'Percentual de produtos precisando de reposição: {percentual:.1f}%')
+        print('==========================================')
 
 def registrar_entrada():
-    atualizar = input('Qual o produto que deseja atualizar? ')
+    atualizar = input('Qual o produto que deseja atualizar? ').strip().lower()
     encontrou = False
 
     for i in range(len(nomes)):
-        if nomes[i] == atualizar:
+        if nomes[i].lower() == atualizar:
             encontrou = True
-            print('produto encontrado!')
+            print(f'Produto "{nomes[i]}" encontrado!')
             while True:
                 try:
                     entrada = int(input('Quantas unidades chegaram? '))
@@ -118,26 +171,27 @@ def registrar_entrada():
                         print('A entrada deve ser maior que zero!')
                         
                 except ValueError:
-                    print('Erro: digite valores numéricos válidos!')
+                    print('Erro: digite uma quantidade inteira válida.')
                     continue
 
             quantidades[i] += entrada
 
-            print(f'Novo estoque: {quantidades[i]}')
+            print(f'Entrada de {entrada} unidades registrada com sucesso!')
+            print(f'Estoque atualizado de {nomes[i]}: {quantidades[i]} unidades.')
 
             salvar_dados()
 
     if not encontrou:
-        print('Produto não encontrado')
+        print('Produto não encontrado.')
 
 def registrar_saida():
-    retirar = input('Qual produto deseja retirar? ')
+    retirar = input('Qual produto deseja retirar? ').strip().lower()
     encontrou = False
 
     for i in range(len(nomes)):
-        if nomes[i] == retirar:
+        if nomes[i].lower() == retirar:
             encontrou = True
-            print('Produto encontrado!')
+            print(f'Produto "{nomes[i]}" encontrado!')
 
             while True:
                 try:
@@ -156,8 +210,8 @@ def registrar_saida():
                     print('Erro: digite valores numéricos válidos!')
 
             quantidades[i] -= saida
-            print('Saída registrada.')
-            print(f'Novo estoque: {quantidades[i]}')
+            print(f'Saída de {saida} unidades registrada com sucesso!')
+            print(f'Estoque atualizado de {nomes[i]}: {quantidades[i]} unidades.')
 
             salvar_dados()
 
@@ -174,16 +228,16 @@ def verificar_estoque_baixo():
         for i in range(len(nomes)):
             if quantidades[i] <= estoque_minimo[i]:
                 if not encontrouAbaixo:
-                    print('Produtos com estoque baixo')
+                    print('\n========== ALERTA DE ESTOQUE BAIXO ==========')
                     encontrouAbaixo = True
 
-                print(f'O produto {nomes[i]} está com estoque baixo | Estoque atual: {quantidades[i]} UN - Estoque mínimo: {estoque_minimo[i]} UN')
+                print(f'{nomes[i]} | Disponível: {quantidades[i]} UN | Mínimo: {estoque_minimo[i]} UN')
 
         if not encontrouAbaixo:
             print('Nenhum produto está com o estoque baixo.')
 
 def sair_programa():
-    print('Programa encerrado')
+    print('\nPrograma encerrado. Até mais!')
 
 while True:
     print('=== SISTEMA DE ESTOQUE ===')
@@ -217,7 +271,7 @@ while True:
         verificar_estoque_baixo()
 
     elif opcao == 6:
-        sair = sair_programa()
+        sair_programa()
         break
     else:
         print('Opção inválida, tente novamente')   
